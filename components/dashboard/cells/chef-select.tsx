@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getAvailableChefUsers, getUserById } from "@/actions/user-actions";
+import { getAvailableCellsUsers, getUserById } from "@/actions/user-actions";
 import { UserSelect } from "@/components/shared/user-select";
 
 interface CelluleChefSelectProps {
@@ -19,7 +19,7 @@ export function CelluleChefSelect({
 }: CelluleChefSelectProps) {
     const { data: users, isLoading: isLoadingList } = useQuery({
         queryKey: ["available-chefs", currentChefId],
-        queryFn: () => getAvailableChefUsers(currentChefId),
+        queryFn: () => getAvailableCellsUsers(currentChefId),
     });
 
     const { data: selectedUser, isLoading: isLoadingUser } = useQuery({

@@ -4,43 +4,35 @@ import { User } from "@/lib/models/User";
 import { Department } from "@/lib/models/Department";
 import { Cellule } from "@/lib/models/Cellule";
 import dbConnect from "@/lib/mongoose";
+import { auth } from "@/auth";
+
+async function checkAuth() {
+  const session = await auth();
+  if (!session?.user) throw new Error("Non authentifié");
+  return session.user;
+}
 
 export async function getUserById(id: string) {
   try {
+    await checkAuth();
     await dbConnect();
-
     const user = await User.findById(id, "-password").lean();
-
-    if (!user) {
-      return { error: "Utilisateur non trouvé" };
-    }
-
+    if (!user) return { error: "Utilisateur non trouvé" };
     return JSON.parse(JSON.stringify(user));
-  } catch (error) {
-    console.error("Erreur lors de la récupération de l'utilisateur:", error);
-    return { error: "Une erreur est survenue" };
+  } catch (error: any) {
+    return { error: error.message };
   }
 }
 
 export async function getAvailableDepartmentUsers(currentChefId?: string) {
   try {
+    await checkAuth();
     await dbConnect();
 
-    const [departments, cellules] = await Promise.all([
-      Department.find({}, "chef").lean(),
-      Cellule.find({}, "chef members").lean()
-    ]);
+    const departments = await Department.find({}, "chef").lean();
+    const chefDeptIds = departments.map(d => d.chef?.toString()).filter(Boolean);
 
-    const chefDeptIds = departments
-      .map(d => d.chef?.toString())
-      .filter(Boolean);
-
-    const assignedCelluleUserIds = cellules.flatMap(c => [
-      c.chef?.toString(),
-      ...(c.members?.map((m: any) => m.toString()) || [])
-    ]).filter(Boolean);
-
-    let excludedUserIds = Array.from(new Set([...chefDeptIds, ...assignedCelluleUserIds]));
+    let excludedUserIds = [...new Set(chefDeptIds)];
 
     if (currentChefId) {
       excludedUserIds = excludedUserIds.filter(id => id !== currentChefId);
@@ -48,10 +40,8 @@ export async function getAvailableDepartmentUsers(currentChefId?: string) {
 
     const users = await User.find(
       { _id: { $nin: excludedUserIds } },
-      "name email image _id"
-    )
-      .sort({ name: 1 })
-      .lean();
+      "name email image"
+    ).sort({ name: 1 }).lean();
 
     return JSON.parse(JSON.stringify(users));
   } catch (error) {
@@ -59,14 +49,14 @@ export async function getAvailableDepartmentUsers(currentChefId?: string) {
   }
 }
 
-export async function getAvailableChefUsers(currentChefId?: string) {
+export async function getAvailableCellsUsers(currentChefId?: string) {
   try {
+    await checkAuth();
     await dbConnect();
 
-    const deptChefs = await Department.find({ chef: { $exists: true } }).distinct("chef");
-    const cellChefs = await Cellule.find({ chef: { $exists: true } }).distinct("chef");
-
-    let excludedIds = [...new Set([...deptChefs, ...cellChefs])].map(id => id.toString());
+    const cellChefs = await Cellule.find({ chef: { $exists: true, $ne: null } }).distinct("chef");
+    
+    let excludedIds = cellChefs.map(id => id.toString());
 
     if (currentChefId) {
       excludedIds = excludedIds.filter(id => id !== currentChefId);
@@ -74,11 +64,10 @@ export async function getAvailableChefUsers(currentChefId?: string) {
 
     const availableUsers = await User.find({
       _id: { $nin: excludedIds }
-    }).select("name email").lean();
+    }).select("name email image").lean();
 
     return JSON.parse(JSON.stringify(availableUsers));
   } catch (error) {
-    console.error("Erreur users disponibles:", error);
     return [];
   }
 }

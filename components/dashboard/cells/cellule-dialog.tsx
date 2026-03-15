@@ -26,16 +26,20 @@ export function CelluleDialog({ open, setOpen, cellule }: { open: boolean, setOp
         defaultValues: { name: "", description: "", department: "", chef: "", members: [] },
     });
 
-    const { register, handleSubmit, reset, control, watch, formState: { errors } } = methods;
+    const { register, handleSubmit, reset, control, formState: { errors } } = methods;
 
     useEffect(() => {
         if (open) {
+            const memberIds = cellule?.members?.map((m: any) =>
+                typeof m === "string" ? m : m._id
+            ) || [];
+
             reset({
                 name: cellule?.name || "",
                 description: cellule?.description || "",
                 department: cellule?.department?._id || cellule?.department || "",
                 chef: cellule?.chef?._id || cellule?.chef || "",
-                members: cellule?.members || [],
+                members: memberIds,
             });
         }
     }, [cellule, open, reset]);
@@ -58,7 +62,13 @@ export function CelluleDialog({ open, setOpen, cellule }: { open: boolean, setOp
                     <DialogTitle>{isEditing ? "Modifier" : "Ajouter"} une cellule</DialogTitle>
                 </DialogHeader>
                 <FormProvider {...methods}>
-                    <form onSubmit={handleSubmit((v) => mutate(v))} className="space-y-6">
+                    <form
+                        onSubmit={handleSubmit(
+                            (v) => mutate(v),
+                            (err) => console.log("Validation Errors:", err)
+                        )}
+                        className="space-y-6"
+                    >
                         <FieldGroup>
                             <Field>
                                 <FieldLabel>Nom de la cellule</FieldLabel>
