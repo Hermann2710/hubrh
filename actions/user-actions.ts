@@ -9,8 +9,7 @@ export async function getUserById(id: string) {
   try {
     await dbConnect();
 
-    const user = await User.findById(id, "-password")
-      .lean();
+    const user = await User.findById(id, "-password").lean();
 
     if (!user) {
       return { error: "Utilisateur non trouvé" };
@@ -19,11 +18,11 @@ export async function getUserById(id: string) {
     return JSON.parse(JSON.stringify(user));
   } catch (error) {
     console.error("Erreur lors de la récupération de l'utilisateur:", error);
-    return { error: "Une erreur est survenue lors de la récupération de l'utilisateur" };
+    return { error: "Une erreur est survenue" };
   }
 }
 
-export async function getAvailableDepartmentUsers() {
+export async function getAvailableDepartmentUsers(currentChefId?: string) {
   try {
     await dbConnect();
 
@@ -41,7 +40,11 @@ export async function getAvailableDepartmentUsers() {
       ...(c.members?.map((m: any) => m.toString()) || [])
     ]).filter(Boolean);
 
-    const excludedUserIds = Array.from(new Set([...chefDeptIds, ...assignedCelluleUserIds]));
+    let excludedUserIds = Array.from(new Set([...chefDeptIds, ...assignedCelluleUserIds]));
+
+    if (currentChefId) {
+      excludedUserIds = excludedUserIds.filter(id => id !== currentChefId);
+    }
 
     const users = await User.find(
       { _id: { $nin: excludedUserIds } },
@@ -52,6 +55,30 @@ export async function getAvailableDepartmentUsers() {
 
     return JSON.parse(JSON.stringify(users));
   } catch (error) {
+    return [];
+  }
+}
+
+export async function getAvailableChefUsers(currentChefId?: string) {
+  try {
+    await dbConnect();
+
+    const deptChefs = await Department.find({ chef: { $exists: true } }).distinct("chef");
+    const cellChefs = await Cellule.find({ chef: { $exists: true } }).distinct("chef");
+
+    let excludedIds = [...new Set([...deptChefs, ...cellChefs])].map(id => id.toString());
+
+    if (currentChefId) {
+      excludedIds = excludedIds.filter(id => id !== currentChefId);
+    }
+
+    const availableUsers = await User.find({
+      _id: { $nin: excludedIds }
+    }).select("name email").lean();
+
+    return JSON.parse(JSON.stringify(availableUsers));
+  } catch (error) {
+    console.error("Erreur users disponibles:", error);
     return [];
   }
 }

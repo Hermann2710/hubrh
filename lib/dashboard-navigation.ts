@@ -5,7 +5,8 @@ import {
   Building2, 
   UserCircle,
   ShieldCheck,
-  Briefcase
+  Briefcase,
+  LayoutGrid
 } from "lucide-react";
 
 export interface NavItem {
@@ -26,6 +27,12 @@ export const dashboardNav: NavItem[] = [
     title: "Ma Structure",
     href: "/dashboard/structure",
     icon: Building2,
+    roles: ["admin", "departmentchef", "cellchef"],
+  },
+  {
+    title: "Mes Cellules",
+    href: "/dashboard/cells",
+    icon: LayoutGrid,
     roles: ["admin", "departmentchef", "cellchef"],
   },
   {

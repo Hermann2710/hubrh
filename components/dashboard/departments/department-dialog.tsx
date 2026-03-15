@@ -98,6 +98,7 @@ export function DepartmentDialog({ open, setOpen, department }: DepartmentDialog
                                             value={field.value}
                                             onChange={field.onChange}
                                             disabled={isPending}
+                                            currentChefId={department?.chef?._id}
                                         />
                                     )}
                                 />

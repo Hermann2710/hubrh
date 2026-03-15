@@ -1,20 +1,25 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getAvailableDepartmentUsers, getUserById } from "@/actions/user-actions";
+import { getAvailableChefUsers, getUserById } from "@/actions/user-actions";
 import { UserSelect } from "@/components/shared/user-select";
 
-interface ChefSelectProps {
+interface CelluleChefSelectProps {
     value?: string;
     onChange: (value: string) => void;
     disabled?: boolean;
     currentChefId?: string;
 }
 
-export function ChefSelect({ value, onChange, disabled, currentChefId }: ChefSelectProps) {
+export function CelluleChefSelect({
+    value,
+    onChange,
+    disabled,
+    currentChefId
+}: CelluleChefSelectProps) {
     const { data: users, isLoading: isLoadingList } = useQuery({
-        queryKey: ["available-dept-users", currentChefId],
-        queryFn: () => getAvailableDepartmentUsers(currentChefId),
+        queryKey: ["available-chefs", currentChefId],
+        queryFn: () => getAvailableChefUsers(currentChefId),
     });
 
     const { data: selectedUser, isLoading: isLoadingUser } = useQuery({
@@ -31,7 +36,7 @@ export function ChefSelect({ value, onChange, disabled, currentChefId }: ChefSel
             users={users || []}
             selectedUser={selectedUser}
             isLoading={isLoadingList || (!!value && isLoadingUser)}
-            placeholder="Sélectionner le chef de département..."
+            placeholder="Sélectionner le chef de cellule..."
         />
     );
 }
